@@ -10,6 +10,7 @@ var morgan = require('morgan');
 var baza = require('./db/books');
 var fs = require('fs');
 
+
 app.set('view engine', 'ejs');
 
 app.use(morgan('dev'));
@@ -27,7 +28,7 @@ app.get('/:gen', function (req, res) {
     var genres = baza().distinct("genre").sort();
     var books = baza({genre: req.params.gen}).select("title", "author");
     var genre = req.params.gen;
-    res.render('index.ejs', {genres: genres, books: books, genre: genre});
+    res.render('index.ejs', {genres: genres, books: books, genre: genre, badLogin: req.query.badLogin});
 });
 
 app.post('/:gen', function (req, res) {
@@ -39,33 +40,27 @@ app.post('/:gen', function (req, res) {
             "author": req.body.author,
             "genre": genre
         });
-        res.redirect('/' + genre);
-    }
 
-    else {
-        res.send('Nieprawidłowe dane logowania');
-        res.redirect('/' + genre);
+        res.redirect("/" + genre);
+    } else {
+        res.redirect("/" + genre + "?badLogin=true");
     }
 });
+
+
+
 
 app.listen(3000, function () {
     console.log('Serwer działa na porcie 3000');
 });
 
 process.on('SIGINT', function () {
-    console.log('On SIGINT!');
-    
-    var student = {  
-        name: 'Mike',
-        age: 23, 
-        gender: 'Male',
-        department: 'English',
-        car: 'Honda' 
-    };
-    
-    var data = JSON.stringify(student);
-    
-    console.log(data);
-    
-    fs.writeFileSync('student.json', data);
+
+    var beginning = "/* jshint node: true */ \n var TAFFY = require('taffy'); \n var books = TAFFY(";
+    var tafText = baza().stringify();
+    var ending = "); \n module.exports = books;";
+    var fileText = [beginning,tafText,ending].join("");
+    fs.writeFileSync("db/books.js",fileText);
+    console.log('\nshutting down');
+    process.exit();
 });
